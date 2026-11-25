@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from langchain_groq import ChatGroq
 from tools import multipy, divide, get_location, get_weather
+from agent import agent
 
 load_dotenv()
 app = FastAPI()
@@ -48,3 +49,26 @@ def chat(body:Chat_body):
             messages.append(result)
 
     return {"success":True, "response":response.content, "messages": messages}
+
+@app.post("/api/agent/chat")
+def agent_chat(body:Chat_body):
+     messages = [
+            ("system", "You are a helpfull assistant, please use tools to perform mathematical operation, and you must use tool for mathematical operation and give ans in short but don't give any answer directly, give with at least in half line, don't explain too much, don't give answer in markdown."),
+            ("human", body.user_message)
+        ]
+
+     result = agent.invoke(
+         {"messages": messages},
+         config={
+             "configurable":{
+                 "thread_id":"user_1"
+             },
+             "recursion_limit":10}
+     )
+
+     return {
+         "success": True,
+         "response": result["messages"][-1].content,
+         "result":result,
+
+     }
