@@ -1,5 +1,6 @@
 from langchain.tools import tool
 import requests
+from langgraph.types import interrupt
 
 @tool
 def multipy(a:int, b:int) -> int:
@@ -71,3 +72,19 @@ def get_weather(latitude:float, longitude:float) -> dict:
             "wind_speed_10m":units.get("wind_speed_10m"),
         }
     }
+
+
+@tool
+def cancel_order(order_id:int) -> str:
+    """Cancel order usint it's order id"""
+
+    approved = interrupt({
+        "action":"cancel_order",
+        "order_id":order_id,
+        "message": "Do you approve this order cancellation."
+    })
+
+    if approved is not True:
+        return "Order cancellation rejected by the user."
+
+    return f"Order {order_id} is cancelled successfully."

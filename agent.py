@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-from tools import multipy, divide, get_weather, get_location
+from tools import multipy, divide, get_weather, get_location, cancel_order
 from langgraph.graph import MessagesState, StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.checkpoint.memory import InMemorySaver
@@ -11,7 +11,7 @@ llm = ChatGroq(
     model="openai/gpt-oss-120b"
 )
 
-tools = [multipy, divide, get_weather, get_location]
+tools = [multipy, divide, get_weather, get_location, cancel_order]
 
 llm_with_tools = llm.bind_tools(tools)
 

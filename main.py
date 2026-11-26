@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from langchain_groq import ChatGroq
 from tools import multipy, divide, get_location, get_weather
 from agent import agent
+from langgraph.types import Command
 
 load_dotenv()
 app = FastAPI()
@@ -53,18 +54,28 @@ def chat(body:Chat_body):
 @app.post("/api/agent/chat")
 def agent_chat(body:Chat_body):
      messages = [
-            ("system", "You are a helpfull assistant, please use tools to perform mathematical operation, and you must use tool for mathematical operation and give ans in short but don't give any answer directly, give with at least in half line, don't explain too much, don't give answer in markdown."),
+            ("system", "You are a helpfull assistant, please use tools to perform mathematical operation, and you must use tool for mathematical operation and other works and give ans in short but don't give any answer directly, give with at least in half line, don't explain too much, don't give answer in markdown."),
             ("human", body.user_message)
         ]
+
+     thread_id  = "user_1"
 
      result = agent.invoke(
          {"messages": messages},
          config={
              "configurable":{
-                 "thread_id":"user_1"
+                 "thread_id":thread_id
              },
              "recursion_limit":10}
      )
+
+     if result.get("__interrupt__"):
+         return {
+             "status":"approval required",
+             "thread_id":thread_id,
+             "approval": result["__interrupt__"][0].value,
+             "result":result
+         }
 
      return {
          "success": True,
@@ -72,3 +83,23 @@ def agent_chat(body:Chat_body):
          "result":result,
 
      }
+
+class ApprovalBody(BaseModel):
+    thread_id: str
+    approved:bool
+
+@app.post("/api/agent/approve")
+def approve(body:ApprovalBody):
+
+    result = agent.invoke(
+        Command(resume=body.approved),
+        config = {
+            "configurable":{
+                "thread_id": body.thread_id
+            }
+        }
+    )
+
+    return {
+        "response": result["messages"][-1].content
+    }
